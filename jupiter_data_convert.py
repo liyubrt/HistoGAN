@@ -35,9 +35,12 @@ class JupiterData(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         df_row = self.df.iloc[idx]
-        stereo_data_sample = np.load(
-            os.path.join(self.data_dir, df_row.stereo_pipeline_npz_save_path)
-        )
+        if self.data_dir is not None:
+            stereo_data_sample = np.load(
+                os.path.join(self.data_dir, df_row.stereo_pipeline_npz_save_path)
+            )
+        else:
+            stereo_data_sample = np.load(df_row.stereo_pipeline_npz_save_path)
         image = io_utils.normalize_image(
             stereo_data_sample[LEFT],
             df_row.hdr_mode,

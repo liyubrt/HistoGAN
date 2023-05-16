@@ -1,5 +1,5 @@
 import os
-import dlib
+# import dlib
 import PIL.Image
 import PIL.ImageFile
 import numpy as np

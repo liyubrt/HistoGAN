@@ -39,8 +39,8 @@ class JupiterDataPL(pl.LightningDataModule):
     def test_dataloader(self) -> DataLoader:
         return DataLoader(
             self.source_dataset,
-            batch_size=8,
-            num_workers=2,
+            batch_size=16,
+            num_workers=4,
             drop_last=False,
             shuffle=False,
             pin_memory=True,
@@ -56,10 +56,20 @@ class JupiterDataConverter(pl.LightningModule):
         self.prepare_for_HistoGAN()
 
     def init_datasets(self):
-        self.target_df = pd.read_csv(self.args.target_csv, low_memory=False)
+        if isinstance(self.args.target_dir, list):
+            assert len(self.args.target_dir) == len(self.args.target_csv), "target dir and csv should match"
+        else:
+            self.args.target_dir = [self.args.target_dir]
+            self.args.target_csv = [self.args.target_csv]
+        target_dfs = []
+        for d, c in zip(self.args.target_dir, self.args.target_csv):
+            df = pd.read_csv(c, low_memory=False).drop_duplicates(subset="id")
+            df.stereo_pipeline_npz_save_path = df.stereo_pipeline_npz_save_path.apply(lambda p: os.path.join(d, p))
+            target_dfs.append(df)
+        self.target_df = pd.concat(target_dfs, ignore_index=True).drop_duplicates(subset="id")
         self.target_df['datetime'] = self.target_df.collected_on.apply(lambda x: convert_to_time_in_a_day(x))
-        self.target_df['index'] = self.target_df.index
-        self.target_dataset = JupiterData(self.args.target_dir, self.target_df, input_size=[])
+        self.target_df['row_idx'] = np.arange(len(self.target_df))
+        self.target_dataset = JupiterData(None, self.target_df, input_size=[])
         self.num_targets = self.args.num_targets  # number of targets to transfer to for each source image
         self.save_dir = self.args.save_dir
         logging.info(f'target df size: {len(self.target_df)}')
@@ -126,7 +136,7 @@ class JupiterDataConverter(pl.LightningModule):
                 delta /= 2
             else:
                 break
-        return last_matched_rows.sample(n=self.num_targets).index.to_list()
+        return last_matched_rows.sample(n=self.num_targets).row_idx.to_list()
 
     def process_image(self, image, style):
         # process image
@@ -179,19 +189,28 @@ class JupiterDataConverter(pl.LightningModule):
         if (1+batch_idx) % 200 == 0:
             logging.info(f'processed {1+batch_idx} batches')
 
+
 if __name__ == '__main__':
     args = get_args()
-    args.source_dir = '/home/bluerivertech/li.yu/data/Jupiter_train_v4_53_missing_human_relabeled'
-    args.source_csv = '/home/bluerivertech/li.yu/data/Jupiter_train_v4_53_missing_human_relabeled/master_annotations_untouched.csv'
-    args.target_dir = '/home/bluerivertech/li.yu/data/Jupiter_train_v4_53_heavy_dust_relabeled'
-    args.target_csv = '/home/bluerivertech/li.yu/data/Jupiter_train_v4_53_heavy_dust_relabeled/master_annotations.csv'
-    args.num_targets = 2
-    args.save_dir = '/home/bluerivertech/li.yu/data/Jupiter_train_v4_53_missing_human_relabeled/processed_color_transfer/images'
+    args.source_dir = '/data/jupiter/datasets/Jupiter_train_v5_11'
+    args.source_csv = '/data/jupiter/datasets/Jupiter_train_v5_11/master_annotations.csv'
+    args.target_dir = [
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230502_train_stereo_640_768',
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230510_train_stereo_640_768_single_ds',
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230512_train_stereo_640_768_single_ds'
+        ]
+    args.target_csv = [
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230502_train_stereo_640_768/master_annotations.csv',
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230510_train_stereo_640_768_single_ds/master_annotations_stereo_valid.csv',
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230512_train_stereo_640_768_single_ds/master_annotations.csv'
+        ]
+    args.num_targets = 1
+    args.save_dir = '/data/jupiter/datasets/Jupiter_train_v5_11/processed_color_transfer/images'
     os.makedirs(args.save_dir, exist_ok=True)
 
     jupiter_data_converter = JupiterDataConverter(args)
     source_data_module = JupiterDataPL(args)
-    num_gpus = 2
+    num_gpus = 8
     trainer = pl.Trainer(
         devices=num_gpus,
         strategy=DDPStrategy(find_unused_parameters=False, static_graph=True),

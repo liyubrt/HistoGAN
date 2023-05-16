@@ -1,3 +1,6 @@
+__pycache__/
+*.py[cod]
+
 debug
 halo_samples
 lightning_logs
