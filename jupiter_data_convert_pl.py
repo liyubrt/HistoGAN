@@ -12,11 +12,10 @@ import pytorch_lightning as pl
 from pytorch_lightning.strategies.ddp import DDPStrategy
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from dl.utils.io_utils import get_current_rank
-
 
 from ReHistoGAN import recoloringTrainer
 from rehistoGAN import get_args
+from utils.pl_utils import get_current_rank
 import utils.pyramid_upsampling as upsampling
 from histogram_classes.RGBuvHistBlock import RGBuvHistBlock
 from jupiter_data_convert import JupiterData, convert_to_time_in_a_day
@@ -219,3 +218,14 @@ if __name__ == '__main__':
         enable_progress_bar=False,
     )
     trainer.test(jupiter_data_converter, datamodule=source_data_module)
+
+    # recreate master_annotations.csv 
+    old_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/epoch0_5_30_focal05_master_annotations.csv'
+    new_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/trainrd05_color_transfer.csv'
+    old_df = pd.read_csv(old_csv, low_memory=False)
+    saved_ids = os.listdir(args.save_dir)
+    new_df = old_df[old_df.id.isin(saved_ids)]
+    new_df['color_transfer_npz_save_path'] = \
+        new_df.id.apply(
+            lambda id: f'processed_color_transfer/images/{id}/color_transfer_output.npz')
+    new_df.to_csv(new_csv, index=False)

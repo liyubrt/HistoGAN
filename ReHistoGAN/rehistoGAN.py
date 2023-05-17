@@ -44,7 +44,7 @@ try:
 except:
   APEX_AVAILABLE = False
 
-from dl.utils.io_utils import get_current_rank
+from utils.pl_utils import get_current_rank
 RANK = get_current_rank()
 # assert torch.cuda.is_available(), ('You need to have an Nvidia GPU with CUDA '
 #                                    'installed.')
