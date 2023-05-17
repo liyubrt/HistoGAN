@@ -207,24 +207,38 @@ if __name__ == '__main__':
     args.save_dir = '/data/jupiter/datasets/Jupiter_train_v5_11/processed_color_transfer/images'
     os.makedirs(args.save_dir, exist_ok=True)
 
-    jupiter_data_converter = JupiterDataConverter(args)
-    source_data_module = JupiterDataPL(args)
-    num_gpus = 8
-    trainer = pl.Trainer(
-        devices=num_gpus,
-        strategy=DDPStrategy(find_unused_parameters=False, static_graph=True),
-        accelerator="gpu",
-        num_sanity_val_steps=0,
-        enable_progress_bar=False,
-    )
-    trainer.test(jupiter_data_converter, datamodule=source_data_module)
+    # # Run HistoGAN in PL
+    # jupiter_data_converter = JupiterDataConverter(args)
+    # source_data_module = JupiterDataPL(args)
+    # num_gpus = 8
+    # trainer = pl.Trainer(
+    #     devices=num_gpus,
+    #     strategy=DDPStrategy(find_unused_parameters=False, static_graph=True),
+    #     accelerator="gpu",
+    #     num_sanity_val_steps=0,
+    #     enable_progress_bar=False,
+    # )
+    # trainer.test(jupiter_data_converter, datamodule=source_data_module)
 
-    # recreate master_annotations.csv 
+    # Recreate master_annotations.csv 
     old_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/epoch0_5_30_focal05_master_annotations.csv'
     new_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/trainrd05_color_transfer.csv'
     old_df = pd.read_csv(old_csv, low_memory=False)
     saved_ids = os.listdir(args.save_dir)
-    new_df = old_df[old_df.id.isin(saved_ids)]
+    # sanity 
+    logging.info('perform sanity check on saved npz files')
+    good_ids = []
+    for i, f in enumerate(saved_ids):
+        try:
+            p = os.path.join(args.save_dir, f, 'color_transfer_output.npz')
+            sample = np.load(p, allow_pickle=True)
+            assert len(sample['target_ids']) == args.num_targets
+            good_ids.append(f)
+        except:
+            logging.info(f)
+        if (i+1) % 10000 == 0:
+            logging.info(f'processed {i+1} images')
+    new_df = old_df[old_df.id.isin(good_ids)]
     new_df['color_transfer_npz_save_path'] = \
         new_df.id.apply(
             lambda id: f'processed_color_transfer/images/{id}/color_transfer_output.npz')
