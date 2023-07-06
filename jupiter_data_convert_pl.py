@@ -191,20 +191,22 @@ class JupiterDataConverter(pl.LightningModule):
 
 if __name__ == '__main__':
     args = get_args()
-    args.source_dir = '/data/jupiter/datasets/Jupiter_train_v5_11'
-    args.source_csv = '/data/jupiter/datasets/Jupiter_train_v5_11/master_annotations.csv'
+    args.source_dir = '/data/jupiter/datasets/Jupiter_train_v5_11_20230508'
+    args.source_csv = '/data/jupiter/datasets/Jupiter_train_v5_11_20230508/master_annotations.csv'
     args.target_dir = [
-        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230502_train_stereo_640_768',
-        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230510_train_stereo_640_768_single_ds',
-        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230512_train_stereo_640_768_single_ds'
+        # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230502_train_stereo_640_768',
+        # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230510_train_stereo_640_768_single_ds',
+        # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230512_train_stereo_640_768_single_ds'
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230517_train_stereo_640_768_single_ds_pmehta_oc_correctscale'
         ]
     args.target_csv = [
-        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230502_train_stereo_640_768/master_annotations.csv',
-        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230510_train_stereo_640_768_single_ds/master_annotations_stereo_valid.csv',
-        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230512_train_stereo_640_768_single_ds/master_annotations.csv'
+        # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230502_train_stereo_640_768/master_lsannotations.csv',
+        # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230510_train_stereo_640_768_single_ds/master_annotations_stereo_valid.csv',
+        # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230512_train_stereo_640_768_single_ds/master_annotations.csv'
+        '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230517_train_stereo_640_768_single_ds_pmehta_oc_correctscale/master_annotations_0512_0516_0517_0520.csv'
         ]
-    args.num_targets = 1
-    args.save_dir = '/data/jupiter/datasets/Jupiter_train_v5_11/processed_color_transfer/images'
+    args.num_targets = 2
+    args.save_dir = '/data/jupiter/datasets/Jupiter_train_v5_11_20230508/processed_color_transfer/images'
     os.makedirs(args.save_dir, exist_ok=True)
 
     # # Run HistoGAN in PL
@@ -222,7 +224,7 @@ if __name__ == '__main__':
 
     # Recreate master_annotations.csv 
     old_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/epoch0_5_30_focal05_master_annotations.csv'
-    new_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/trainrd05_color_transfer.csv'
+    new_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/trainrd05_color_transfer_0629.csv'
     old_df = pd.read_csv(old_csv, low_memory=False)
     saved_ids = os.listdir(args.save_dir)
     # sanity 
