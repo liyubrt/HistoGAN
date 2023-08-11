@@ -191,8 +191,8 @@ class JupiterDataConverter(pl.LightningModule):
 
 if __name__ == '__main__':
     args = get_args()
-    args.source_dir = '/data/jupiter/datasets/Jupiter_train_v5_11_20230508'
-    args.source_csv = '/data/jupiter/datasets/Jupiter_train_v5_11_20230508/master_annotations.csv'
+    args.source_dir = '/data/jupiter/li.yu/data/Jupiter_2023_0215_0302_human_dust_labeled'
+    args.source_csv = '/data/jupiter/li.yu/data/Jupiter_2023_0215_0302_human_dust_labeled/master_annotations.csv'
     args.target_dir = [
         # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230502_train_stereo_640_768',
         # '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230510_train_stereo_640_768_single_ds',
@@ -206,26 +206,25 @@ if __name__ == '__main__':
         '/data/jupiter/datasets/Jupiter_halo_labeled_data_20230517_train_stereo_640_768_single_ds_pmehta_oc_correctscale/master_annotations_0512_0516_0517_0520.csv'
         ]
     args.num_targets = 2
-    args.save_dir = '/data/jupiter/datasets/Jupiter_train_v5_11_20230508/processed_color_transfer/images'
+    args.save_dir = '/data/jupiter/li.yu/data/Jupiter_2023_0215_0302_human_dust_labeled/processed_color_transfer/images'
+    args.save_csv = '/data/jupiter/li.yu/data/Jupiter_2023_0215_0302_human_dust_labeled/color_transfer_0811.csv'
     os.makedirs(args.save_dir, exist_ok=True)
 
-    # # Run HistoGAN in PL
-    # jupiter_data_converter = JupiterDataConverter(args)
-    # source_data_module = JupiterDataPL(args)
-    # num_gpus = 8
-    # trainer = pl.Trainer(
-    #     devices=num_gpus,
-    #     strategy=DDPStrategy(find_unused_parameters=False, static_graph=True),
-    #     accelerator="gpu",
-    #     num_sanity_val_steps=0,
-    #     enable_progress_bar=False,
-    # )
-    # trainer.test(jupiter_data_converter, datamodule=source_data_module)
+    # Run HistoGAN in PL
+    jupiter_data_converter = JupiterDataConverter(args)
+    source_data_module = JupiterDataPL(args)
+    num_gpus = 1
+    trainer = pl.Trainer(
+        devices=num_gpus,
+        strategy=DDPStrategy(find_unused_parameters=False, static_graph=True),
+        accelerator="gpu",
+        num_sanity_val_steps=0,
+        enable_progress_bar=False,
+    )
+    trainer.test(jupiter_data_converter, datamodule=source_data_module)
 
     # Recreate master_annotations.csv 
-    old_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/epoch0_5_30_focal05_master_annotations.csv'
-    new_csv = '/data/jupiter/li.yu/data/Jupiter_train_v5_11/trainrd05_color_transfer_0629.csv'
-    old_df = pd.read_csv(old_csv, low_memory=False)
+    old_df = pd.read_csv(args.source_csv, low_memory=False)
     saved_ids = os.listdir(args.save_dir)
     # sanity 
     logging.info('perform sanity check on saved npz files')
@@ -244,4 +243,4 @@ if __name__ == '__main__':
     new_df['color_transfer_npz_save_path'] = \
         new_df.id.apply(
             lambda id: f'processed_color_transfer/images/{id}/color_transfer_output.npz')
-    new_df.to_csv(new_csv, index=False)
+    new_df.to_csv(args.save_csv, index=False)
